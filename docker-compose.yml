@@ -1,0 +1,15 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: universidad
+    environment:
+      POSTGRES_USER: estudiante
+      POSTGRES_PASSWORD: pass123
+      POSTGRES_DB: universidad
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata-universidad:/var/lib/postgresql/data
+
+volumes:
+  pgdata-universidad:
