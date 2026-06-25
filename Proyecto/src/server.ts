@@ -7,11 +7,11 @@ const PORT = 3000
 
 app.use(express.json())
 
-app.get("/", (req, res) => {
+app.get("/", (req:any, res:any) => {
   res.send("Servidor funcionando")
 })
 
-app.get("/test-db", async (req, res) => {
+app.get("/test-db", async (req:any, res:any) => {
   try {
     const resultado = await pool.query("SELECT NOW()")
 
@@ -28,7 +28,7 @@ app.get("/test-db", async (req, res) => {
     })
   }
 })
-app.get("/tablas", async (req, res) => {
+app.get("/tablas", async (req:any, res:any) => {
   try {
     const resultado = await pool.query(`
       SELECT table_name
@@ -47,7 +47,7 @@ app.get("/tablas", async (req, res) => {
   }
 })
 
-app.get("/columnas-estudiante", async (req, res) => {
+app.get("/columnas-estudiante", async (req:any, res:any) => {
   const resultado = await pool.query(`
     SELECT column_name, data_type
     FROM information_schema.columns
@@ -58,7 +58,7 @@ app.get("/columnas-estudiante", async (req, res) => {
   res.json(resultado.rows)
 })
 
-app.get("/api/estudiantes", async (req, res) => {
+app.get("/api/estudiantes", async (req:any, res:any) => {
   const resultado = await pool.query(`
     SELECT id, nombre, correo, carrera, semestre_actual, fecha_ingreso, estado
     FROM estudiante
@@ -68,7 +68,7 @@ app.get("/api/estudiantes", async (req, res) => {
   res.json(resultado.rows)
 })
 
-app.get("/api/estudiantes/:id", async (req, res) => {
+app.get("/api/estudiantes/:id", async (req:any, res:any) => {
   const idNumero = Number(req.params.id)
 
   if (Number.isNaN(idNumero)) {
@@ -103,7 +103,7 @@ app.get("/api/estudiantes/:id", async (req, res) => {
   }
 })
 
-app.get("/api/profesores", async (req, res) => {
+app.get("/api/profesores", async (req:any, res:any) => {
   try {
     const resultado = await pool.query(`
       SELECT id, nombre, correo, departamento, fecha_contratacion
@@ -123,8 +123,29 @@ app.get("/api/profesores", async (req, res) => {
   }
 })
 
+app.get("/api/cursos", async (req:any, res:any) => {
+  try {
+    const resultado = await pool.query(`
+      SELECT curso.id, curso.nombre, cant_creditos, profe.nombre as profesor , cupo_max
+      FROM curso
+      LEFT JOIN profesor profe On curso.profesor_id = profe.id
+      ORDER BY curso.id
+    `)
 
-app.get("/api/profesores/:id", async (req, res) => {
+    res.json(resultado.rows)
+
+  } catch (error) {
+    console.error(error)
+
+    res.status(500).json({
+      mensaje: "Error consultando cursos",
+      error,
+    })
+  }
+})
+
+
+app.get("/api/profesores/:id", async (req:any, res:any) => {
   const idNumero = Number(req.params.id)
 
   if (Number.isNaN(idNumero)) {
@@ -160,8 +181,45 @@ app.get("/api/profesores/:id", async (req, res) => {
   }
 })
 
+app.get("/api/cursos/:id", async (req:any, res:any) => {
+  const idNumero = Number(req.params.id)
 
-app.post("/api/estudiantes", async (req, res) => {
+  if (Number.isNaN(idNumero)) {
+    res.status(400).json({
+      mensaje: "El id debe ser un número"
+    })
+    return
+  }
+
+  try {
+    const resultado = await pool.query(`
+      SELECT curso.id, curso.nombre, cant_creditos, profe.nombre as profesor , cupo_max
+      FROM curso
+      LEFT JOIN profesor profe On curso.profesor_id = profe.id
+      WHERE curso.id = $1
+    `, [idNumero])
+
+    if (resultado.rows.length === 0) {
+      res.status(404).json({
+        mensaje: "Curso no encontrado"
+      })
+      return
+    }
+
+    res.json(resultado.rows[0])
+
+  } catch (error) {
+    console.error(error)
+
+    res.status(500).json({
+      mensaje: "Error consultando curso",
+      error,
+    })
+  }
+})
+
+
+app.post("/api/estudiantes", async (req:any, res:any) => {
   const {
     nombre,
     correo,
@@ -224,6 +282,133 @@ app.post("/api/estudiantes", async (req, res) => {
 
     res.status(500).json({
       error: "Error al crear el estudiante"
+    })
+  }
+})
+
+app.post("/api/profesores", async (req:any, res:any) => {
+  const {
+    nombre,
+    correo,
+    departamento,
+  } = req.body as {
+    nombre: string
+    correo: string
+    departamento: string
+  }
+
+  if (
+    !nombre?.trim() ||
+    !correo?.trim() ||
+    !departamento?.trim()
+  ) {
+    res.status(400).json({
+      error: "Nombre, correo y departamento son obligatorios"
+    })
+    return
+  }
+
+  try {
+    const { rows } = await pool.query(
+      `INSERT INTO profesor
+       (
+         nombre,
+         correo,
+         departamento
+       )
+       VALUES
+       (
+         $1,
+         $2,
+         $3
+       )
+       RETURNING *`,
+      [
+        nombre.trim(),
+        correo.trim(),
+        departamento.trim()
+      ]
+    )
+
+    res.status(201).json(rows[0])
+
+  } catch (error) {
+    console.error("Error al crear profesor:", error)
+
+    res.status(500).json({
+      error: "Error al crear el profesor"
+    })
+  }
+})
+
+app.post("/api/cursos", async (req:any, res:any) => {
+  const {
+    nombre,
+    cant_creditos,
+    profesor_id,
+    cupo_max,
+  } = req.body as {
+    nombre: string
+    cant_creditos: number
+    profesor_id: number
+    cupo_max: number
+  }
+
+  if (
+    !nombre?.trim()
+  ) {
+    res.status(400).json({
+      error: "Nombre es obligatorio"
+    })
+    return
+  }
+
+  if (cant_creditos < 1) {
+    res.status(400).json({
+      error: "La cantidad de creditos debe ser mayor a 0"
+    })
+    return
+  }
+
+  if (cupo_max < 1) {
+    res.status(400).json({
+      error: "EL cupo maximo debe ser mayor a 0"
+    })
+    return
+  }
+
+  try {
+    const { rows } = await pool.query(
+      `INSERT INTO curso
+       (
+         nombre,
+         cant_creditos,
+         profesor_id,
+         cupo_max
+       )
+       VALUES
+       (
+         $1,
+         $2,
+         $3,
+         $4
+       )
+       RETURNING *`,
+      [
+        nombre.trim(),
+        cant_creditos,
+        profesor_id,
+        cupo_max,       
+      ]
+    )
+
+    res.status(201).json(rows[0])
+
+  } catch (error) {
+    console.error("Error al crear curso:", error)
+
+    res.status(500).json({
+      error: "Error al crear el curso"
     })
   }
 })
