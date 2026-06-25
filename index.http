@@ -1,0 +1,45 @@
+### Probar servidor
+GET http://localhost:3000/
+
+###
+
+### Probar conexión a PostgreSQL
+GET http://localhost:3000/test-db
+
+###
+
+### Ver tablas
+GET http://localhost:3000/tablas
+
+###
+
+### Listar estudiantes
+GET http://localhost:3000/api/estudiantes
+
+###
+
+### Obtener estudiante por ID
+GET http://localhost:3000/api/estudiantes/1
+
+###
+
+### Listar profesores
+GET http://localhost:3000/api/profesores
+
+###
+
+### Obtener profesor por ID
+GET http://localhost:3000/api/profesores/1
+
+###
+
+### Crear estudiante
+POST http://localhost:3000/api/estudiantes
+Content-Type: application/json
+
+{
+  "nombre": "Santiago Gutierrez",
+  "correo": "santiago@gmail.com",
+  "carrera": "Ingenieria de Sistemas",
+  "semestre_actual": 4
+}
