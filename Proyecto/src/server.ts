@@ -244,6 +244,47 @@ app.put("/api/estudiantes/:id", async (req, res) => {
   }
 })
 
+app.delete("/api/estudiantes/:id", async (req:any, res:any) => {
+  const idNumero = Number(req.params.id)
+
+  if (Number.isNaN(idNumero)) {
+    res.status(400).json({
+      mensaje: "El id debe ser un número"
+    })
+    return
+  }
+
+  try {
+    const resultado = await pool.query(
+      `
+      DELETE FROM estudiante
+      WHERE id = $1
+      RETURNING *
+      `,
+      [idNumero]
+    )
+
+    if (resultado.rows.length === 0) {
+      res.status(404).json({
+        mensaje: "Estudiante no encontrado"
+      })
+      return
+    }
+
+    res.json({
+      mensaje: "Estudiante eliminado correctamente",
+      estudiante: resultado.rows[0]
+    })
+
+  } catch (error) {
+    console.error("Error eliminando estudiante:", error)
+
+    res.status(500).json({
+      mensaje: "Error eliminando estudiante",
+      error
+    })
+  }
+})
 
 
 //Profesores
@@ -419,6 +460,48 @@ app.put("/api/profesores/:id", async (req, res) => {
 
     res.status(500).json({
       error: "Error al actualizar el profesor"
+    })
+  }
+})
+
+app.delete("/api/profesores/:id", async (req:any, res:any) => {
+  const idNumero = Number(req.params.id)
+
+  if (Number.isNaN(idNumero)) {
+    res.status(400).json({
+      mensaje: "El id debe ser un número"
+    })
+    return
+  }
+
+  try {
+    const resultado = await pool.query(
+      `
+      DELETE FROM profesor
+      WHERE id = $1
+      RETURNING *
+      `,
+      [idNumero]
+    )
+
+    if (resultado.rows.length === 0) {
+      res.status(404).json({
+        mensaje: "Profesor no encontrado"
+      })
+      return
+    }
+
+    res.json({
+      mensaje: "Profesor eliminado correctamente",
+      estudiante: resultado.rows[0]
+    })
+
+  } catch (error) {
+    console.error("Error eliminando profesor:", error)
+
+    res.status(500).json({
+      mensaje: "Error eliminando profesor",
+      error
     })
   }
 })
@@ -619,6 +702,47 @@ app.put("/api/cursos/:id", async (req, res) => {
   }
 })
 
+app.delete("/api/cursos/:id", async (req:any, res:any) => {
+  const idNumero = Number(req.params.id)
+
+  if (Number.isNaN(idNumero)) {
+    res.status(400).json({
+      mensaje: "El id debe ser un número"
+    })
+    return
+  }
+
+  try {
+    const resultado = await pool.query(
+      `
+      DELETE FROM cursos
+      WHERE id = $1
+      RETURNING *
+      `,
+      [idNumero]
+    )
+
+    if (resultado.rows.length === 0) {
+      res.status(404).json({
+        mensaje: "Curso no encontrado"
+      })
+      return
+    }
+
+    res.json({
+      mensaje: "Curso eliminado correctamente",
+      estudiante: resultado.rows[0]
+    })
+
+  } catch (error) {
+    console.error("Error eliminando curso:", error)
+
+    res.status(500).json({
+      mensaje: "Error eliminando curso",
+      error
+    })
+  }
+})
 // INSCRIPCIONES
 
 app.get("/api/inscripciones", async (req, res) => {
@@ -729,6 +853,48 @@ app.put("/api/inscripciones/:id", async (req, res) => {
 
     res.status(500).json({
       error: "Error al actualizar la inscripción"
+    })
+  }
+})
+
+app.delete("/api/inscripciones/:id", async (req:any, res:any) => {
+  const idNumero = Number(req.params.id)
+
+  if (Number.isNaN(idNumero)) {
+    res.status(400).json({
+      mensaje: "El id debe ser un número"
+    })
+    return
+  }
+
+  try {
+    const resultado = await pool.query(
+      `
+      DELETE FROM inscripcion
+      WHERE id = $1
+      RETURNING *
+      `,
+      [idNumero]
+    )
+
+    if (resultado.rows.length === 0) {
+      res.status(404).json({
+        mensaje: "Inscripcion no encontrada"
+      })
+      return
+    }
+
+    res.json({
+      mensaje: "Inscripcion eliminada correctamente",
+      estudiante: resultado.rows[0]
+    })
+
+  } catch (error) {
+    console.error("Error eliminando inscripcion:", error)
+
+    res.status(500).json({
+      mensaje: "Error eliminando inscripcion",
+      error
     })
   }
 })
