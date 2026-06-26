@@ -43,3 +43,35 @@ Content-Type: application/json
   "carrera": "Ingenieria de Sistemas",
   "semestre_actual": 4
 }
+
+### ACTUALIZAR ESTUDIANTE
+PUT http://localhost:3000/api/estudiantes/1
+Content-Type: application/json
+
+{
+  "nombre": "Martin Serrano",
+  "correo": "martin@gmail.com",
+  "carrera": "Ingeniería de Sistemas",
+  "semestre_actual": 5
+}
+
+### Actualizar profesor
+PUT http://localhost:3000/api/profesores/1
+Content-Type: application/json
+
+{
+  "nombre": "Carlos Pérez",
+  "correo": "carlos.perez@universidad.edu",
+  "departamento": "Ingeniería de Sistemas"
+}
+
+### Actualizar curso
+PUT http://localhost:3000/api/cursos/1
+Content-Type: application/json
+
+{
+  "nombre": "Base de Datos para Cracks",
+  "cant_creditos": 4,
+  "profesor_id": 2,
+  "cupo_max": 40
+}
