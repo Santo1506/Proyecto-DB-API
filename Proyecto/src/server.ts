@@ -619,6 +619,119 @@ app.put("/api/cursos/:id", async (req, res) => {
   }
 })
 
+// INSCRIPCIONES
+
+app.get("/api/inscripciones", async (req, res) => {
+  try {
+    const { rows } = await pool.query(`
+      SELECT id, fecha_ins, estado, estudiante_id, curso_id
+      FROM inscripcion
+      ORDER BY id
+    `)
+
+    res.json(rows)
+
+  } catch (error) {
+    console.error("Error al consultar inscripciones:", error)
+
+    res.status(500).json({
+      error: "Error al obtener las inscripciones"
+    })
+  }
+})
+
+app.post("/api/inscripciones", async (req, res) => {
+  const {
+    estado,
+    estudiante_id,
+    curso_id
+  } = req.body
+
+  if (!estado || !estudiante_id || !curso_id) {
+    res.status(400).json({
+      error: "Todos los campos son obligatorios"
+    })
+    return
+  }
+
+  try {
+    const { rows } = await pool.query(
+      `INSERT INTO inscripcion
+      (estado, estudiante_id, curso_id)
+      VALUES
+      ($1, $2, $3)
+      RETURNING *`,
+      [estado, estudiante_id, curso_id]
+    )
+    res.status(201).json(rows[0])
+
+  } catch (error) {
+    console.error("Error al crear inscripción:", error)
+
+    res.status(500).json({
+      error: "Error al crear la inscripción"
+    })
+  }
+})
+
+
+app.put("/api/inscripciones/:id", async (req, res) => {
+  const idNumero = Number(req.params.id)
+
+  if (Number.isNaN(idNumero)) {
+    res.status(400).json({
+      error: "El id debe ser un número"
+    })
+    return
+  }
+
+  const {
+    estado,
+    estudiante_id,
+    curso_id
+  } = req.body
+
+  if (!estado || !estudiante_id || !curso_id) {
+    res.status(400).json({
+      error: "Todos los campos son obligatorios"
+    })
+    return
+  }
+
+  try {
+    const { rows } = await pool.query(
+      `UPDATE inscripcion
+       SET
+         estado = $1,
+         estudiante_id = $2,
+         curso_id = $3
+       WHERE id = $4
+       RETURNING *`,
+      [
+        estado,
+        estudiante_id,
+        curso_id,
+        idNumero
+      ]
+    )
+
+    if (rows.length === 0) {
+      res.status(404).json({
+        error: "Inscripción no encontrada"
+      })
+      return
+    }
+
+    res.status(200).json(rows[0])
+
+  } catch (error) {
+    console.error("Error al actualizar inscripción:", error)
+
+    res.status(500).json({
+      error: "Error al actualizar la inscripción"
+    })
+  }
+})
 
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en http://localhost:${PORT}`)

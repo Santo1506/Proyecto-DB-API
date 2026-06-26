@@ -75,3 +75,27 @@ Content-Type: application/json
   "profesor_id": 2,
   "cupo_max": 40
 }
+
+### Obtener todas las inscripciones
+GET http://localhost:3000/api/inscripciones
+
+
+### Crear una inscripción
+POST http://localhost:3000/api/inscripciones
+Content-Type: application/json
+
+{
+  "estado": "activa",
+  "estudiante_id": 1,
+  "curso_id": 2
+}
+
+### Actualizar una inscripción
+PUT http://localhost:3000/api/inscripciones/1
+Content-Type: application/json
+
+{
+  "estado": "aprobada",
+  "estudiante_id": 1,
+  "curso_id": 2
+}
