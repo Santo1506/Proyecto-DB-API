@@ -1,134 +1,319 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema Universitario</title>
-
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Universidad API | Panel de Gestión</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
-
 <body>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Navegación principal">
+      <div class="brand">
+        <div class="brand-mark">U</div>
+        <div>
+          <h1>Universidad API</h1>
+          <p>Panel frontend</p>
+        </div>
+      </div>
 
-    <header>
-        <h1>🎓 Sistema de Gestión Universitaria</h1>
-    </header>
+      <nav class="nav-tabs" aria-label="Módulos">
+        <button class="nav-tab is-active" data-section="dashboard">Dashboard</button>
+        <button class="nav-tab" data-section="estudiantes">Estudiantes</button>
+        <button class="nav-tab" data-section="profesores">Profesores</button>
+        <button class="nav-tab" data-section="cursos">Cursos</button>
+        <button class="nav-tab" data-section="inscripciones">Inscripciones</button>
+      </nav>
 
-    <div class="container">
+      <div class="api-box">
+        <label for="apiBaseUrl">URL del backend</label>
+        <div class="api-row">
+          <input id="apiBaseUrl" type="url" value="http://localhost:3000" />
+          <button id="saveApiUrl" class="btn btn-small" type="button">OK</button>
+        </div>
+        <p>Usa Live Server para este HTML y deja el backend corriendo aparte.</p>
+      </div>
+    </aside>
 
-        <aside>
+    <main class="main-content">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Proyecto DB API</p>
+          <h2 id="sectionTitle">Dashboard</h2>
+        </div>
+        <div class="topbar-actions">
+          <button id="refreshCurrent" class="btn btn-secondary" type="button">Actualizar</button>
+        </div>
+      </header>
 
-            <button id="btnEstudiantes">👨‍🎓 Estudiantes</button>
+      <div id="alert" class="alert" role="status" aria-live="polite" hidden></div>
 
-            <button id="btnProfesores">👨‍🏫 Profesores</button>
+      <section id="dashboard" class="view is-active">
+        <div class="hero-card">
+          <div>
+            <p class="eyebrow">Estado general</p>
+            <h3>Gestión académica conectada a PostgreSQL</h3>
+            <p>Desde esta interfaz puedes consultar, crear, actualizar y eliminar registros usando exactamente los endpoints existentes del backend.</p>
+          </div>
+          <button id="checkApi" class="btn" type="button">Probar conexión</button>
+        </div>
 
-            <button id="btnCursos">📚 Cursos</button>
+        <div class="stats-grid">
+          <article class="stat-card">
+            <span>Estudiantes</span>
+            <strong id="countEstudiantes">—</strong>
+          </article>
+          <article class="stat-card">
+            <span>Profesores</span>
+            <strong id="countProfesores">—</strong>
+          </article>
+          <article class="stat-card">
+            <span>Cursos</span>
+            <strong id="countCursos">—</strong>
+          </article>
+          <article class="stat-card">
+            <span>Inscripciones</span>
+            <strong id="countInscripciones">—</strong>
+          </article>
+        </div>
 
-            <button id="btnInscripciones">📝 Inscripciones</button>
+        <div class="info-grid">
+          <article class="info-card">
+            <h4>Uso con Live Server</h4>
+            <p>Abre <strong>public/index.html</strong> con Live Server y mantén el backend activo con <strong>npm run dev</strong>.</p>
+          </article>
+          <article class="info-card warning-card">
+            <h4>Nota sobre CORS</h4>
+            <p>Si el navegador bloquea las peticiones, es una restricción de origen cruzado. Este frontend no modifica el backend.</p>
+          </article>
+        </div>
+      </section>
 
-            <hr>
+      <section id="estudiantes" class="view">
+        <div class="module-grid">
+          <form id="formEstudiante" class="form-card" autocomplete="off">
+            <div class="form-header">
+              <div>
+                <p class="eyebrow">Formulario</p>
+                <h3 id="estudianteFormTitle">Crear estudiante</h3>
+              </div>
+              <button type="button" class="btn btn-ghost btn-small" data-reset-form="estudiante">Limpiar</button>
+            </div>
+            <input type="hidden" id="estudianteId" />
+            <label>Nombre
+              <input id="estudianteNombre" type="text" placeholder="Ej. Laura Martínez" required />
+            </label>
+            <label>Correo
+              <input id="estudianteCorreo" type="email" placeholder="correo@ejemplo.com" required />
+            </label>
+            <label>Carrera
+              <input id="estudianteCarrera" type="text" placeholder="Ingeniería de Sistemas" required />
+            </label>
+            <label>Semestre actual
+              <input id="estudianteSemestre" type="number" min="1" max="10" placeholder="1 - 10" required />
+            </label>
+            <button class="btn" type="submit">Guardar estudiante</button>
+          </form>
 
-            <button id="btnTop10">
-                Top 10 Estudiantes
-            </button>
+          <div class="data-card">
+            <div class="data-header">
+              <div>
+                <p class="eyebrow">Registros</p>
+                <h3>Estudiantes</h3>
+              </div>
+              <button class="btn btn-secondary btn-small" type="button" data-reload="estudiantes">Recargar</button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Nombre</th>
+                    <th>Correo</th>
+                    <th>Carrera</th>
+                    <th>Semestre</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="tablaEstudiantes"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
 
-            <button id="btnCursosPM">
-                Cursos Programación / Matemáticas
-            </button>
+      <section id="profesores" class="view">
+        <div class="module-grid">
+          <form id="formProfesor" class="form-card" autocomplete="off">
+            <div class="form-header">
+              <div>
+                <p class="eyebrow">Formulario</p>
+                <h3 id="profesorFormTitle">Crear profesor</h3>
+              </div>
+              <button type="button" class="btn btn-ghost btn-small" data-reset-form="profesor">Limpiar</button>
+            </div>
+            <input type="hidden" id="profesorId" />
+            <label>Nombre
+              <input id="profesorNombre" type="text" placeholder="Ej. Mario Rodríguez" required />
+            </label>
+            <label>Correo
+              <input id="profesorCorreo" type="email" placeholder="profesor@universidad.com" required />
+            </label>
+            <label>Departamento
+              <input id="profesorDepartamento" type="text" placeholder="Ingeniería" required />
+            </label>
+            <button class="btn" type="submit">Guardar profesor</button>
+          </form>
 
-            <button id="btnCursosInscripciones">
-                Cursos por Inscripciones
-            </button>
+          <div class="data-card">
+            <div class="data-header">
+              <div>
+                <p class="eyebrow">Registros</p>
+                <h3>Profesores</h3>
+              </div>
+              <button class="btn btn-secondary btn-small" type="button" data-reload="profesores">Recargar</button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Nombre</th>
+                    <th>Correo</th>
+                    <th>Departamento</th>
+                    <th>Fecha contratación</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="tablaProfesores"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
 
-            <button id="btnActivas">
-                Inscripciones Activas
-            </button>
+      <section id="cursos" class="view">
+        <div class="module-grid">
+          <form id="formCurso" class="form-card" autocomplete="off">
+            <div class="form-header">
+              <div>
+                <p class="eyebrow">Formulario</p>
+                <h3 id="cursoFormTitle">Crear curso</h3>
+              </div>
+              <button type="button" class="btn btn-ghost btn-small" data-reset-form="curso">Limpiar</button>
+            </div>
+            <input type="hidden" id="cursoId" />
+            <label>Nombre
+              <input id="cursoNombre" type="text" placeholder="Programación Backend" required />
+            </label>
+            <label>Créditos
+              <input id="cursoCreditos" type="number" min="1" placeholder="4" required />
+            </label>
+            <label>Profesor
+              <select id="cursoProfesor" required>
+                <option value="">Selecciona un profesor</option>
+              </select>
+            </label>
+            <label>Cupo máximo
+              <input id="cursoCupo" type="number" min="1" placeholder="30" required />
+            </label>
+            <button class="btn" type="submit">Guardar curso</button>
+          </form>
 
-            <button id="btnProfesor3">
-                Profesores con 3 cursos
-            </button>
+          <div class="data-card">
+            <div class="data-header">
+              <div>
+                <p class="eyebrow">Registros</p>
+                <h3>Cursos</h3>
+              </div>
+              <button class="btn btn-secondary btn-small" type="button" data-reload="cursos">Recargar</button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Nombre</th>
+                    <th>Créditos</th>
+                    <th>Profesor</th>
+                    <th>Cupo</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="tablaCursos"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
 
-            <button id="btnCupo">
-                Cursos con Cupo
-            </button>
+      <section id="inscripciones" class="view">
+        <div class="module-grid">
+          <form id="formInscripcion" class="form-card" autocomplete="off">
+            <div class="form-header">
+              <div>
+                <p class="eyebrow">Formulario</p>
+                <h3 id="inscripcionFormTitle">Crear inscripción</h3>
+              </div>
+              <button type="button" class="btn btn-ghost btn-small" data-reset-form="inscripcion">Limpiar</button>
+            </div>
+            <input type="hidden" id="inscripcionId" />
+            <label>Estudiante
+              <select id="inscripcionEstudiante" required>
+                <option value="">Selecciona un estudiante</option>
+              </select>
+            </label>
+            <label>Curso
+              <select id="inscripcionCurso" required>
+                <option value="">Selecciona un curso</option>
+              </select>
+            </label>
+            <label>Estado
+              <select id="inscripcionEstado" required>
+                <option value="activa">Activa</option>
+                <option value="aprobada">Aprobada</option>
+                <option value="reprobada">Reprobada</option>
+              </select>
+            </label>
+            <button class="btn" type="submit">Guardar inscripción</button>
+          </form>
 
-            <button id="btnPromedio">
-                Promedio de Notas
-            </button>
+          <div class="data-card">
+            <div class="data-header">
+              <div>
+                <p class="eyebrow">Registros</p>
+                <h3>Inscripciones</h3>
+              </div>
+              <button class="btn btn-secondary btn-small" type="button" data-reload="inscripciones">Recargar</button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Fecha</th>
+                    <th>Estado</th>
+                    <th>Estudiante</th>
+                    <th>Curso</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="tablaInscripciones"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
 
-            <button id="btnPromedioSuperior">
-                Promedio Superior
-            </button>
+  <template id="emptyRowTemplate">
+    <tr>
+      <td colspan="7" class="empty-state">No hay registros para mostrar.</td>
+    </tr>
+  </template>
 
-        </aside>
-
-        <main>
-
-            <section class="panel">
-
-                <h2 id="titulo">
-                    Bienvenido
-                </h2>
-
-                <div class="busqueda">
-
-                    <input
-                        type="number"
-                        id="buscarId"
-                        placeholder="Buscar por ID">
-
-                    <button id="btnBuscar">
-                        Buscar
-                    </button>
-
-                </div>
-
-                <table>
-
-                    <thead id="encabezadoTabla">
-
-                    </thead>
-
-                    <tbody id="tabla">
-
-                    </tbody>
-
-                </table>
-
-            </section>
-
-
-            <section class="panel">
-
-                <h2>
-                    Formulario
-                </h2>
-
-                <form id="formulario">
-
-                    <div id="campos">
-
-                    </div>
-
-                    <button type="submit">
-                        Guardar
-                    </button>
-
-                </form>
-
-            </section>
-
-        </main>
-
-    </div>
-
-    <div id="mensaje">
-
-    </div>
-
-    <script src="app.js"></script>
-
+  <script src="app.js"></script>
 </body>
-
 </html>

@@ -1,614 +1,708 @@
-const API_URL = "http://localhost:3000"
+const DEFAULT_API_URL = "http://localhost:3000"
 
-// Estado global
-let estadoActual = "estudiantes"
-let registroEnEdicion = null
-
-// Elementos del DOM
-const btnEstudiantes = document.getElementById("btnEstudiantes")
-const btnProfesores = document.getElementById("btnProfesores")
-const btnCursos = document.getElementById("btnCursos")
-const btnInscripciones = document.getElementById("btnInscripciones")
-const titulo = document.getElementById("titulo")
-const tabla = document.getElementById("tabla")
-const encabezadoTabla = document.getElementById("encabezadoTabla")
-const formulario = document.getElementById("formulario")
-const campos = document.getElementById("campos")
-const buscarId = document.getElementById("buscarId")
-const btnBuscar = document.getElementById("btnBuscar")
-const mensaje = document.getElementById("mensaje")
-
-// Botones de queries
-const btnTop10 = document.getElementById("btnTop10")
-const btnCursosPM = document.getElementById("btnCursosPM")
-const btnCursosInscripciones = document.getElementById("btnCursosInscripciones")
-const btnActivas = document.getElementById("btnActivas")
-const btnProfesor3 = document.getElementById("btnProfesor3")
-const btnCupo = document.getElementById("btnCupo")
-const btnPromedio = document.getElementById("btnPromedio")
-const btnPromedioSuperior = document.getElementById("btnPromedioSuperior")
-
-// Event Listeners para navegación
-btnEstudiantes.addEventListener("click", () => cargarEstudiantes())
-btnProfesores.addEventListener("click", () => cargarProfesores())
-btnCursos.addEventListener("click", () => cargarCursos())
-btnInscripciones.addEventListener("click", () => cargarInscripciones())
-
-// Event Listeners para queries
-btnTop10.addEventListener("click", () => cargarTop10())
-btnCursosPM.addEventListener("click", () => cargarCursosProgramacionMatematicas())
-btnCursosInscripciones.addEventListener("click", () => cargarCursosPorInscripciones())
-btnActivas.addEventListener("click", () => cargarInscripcionesActivas())
-btnProfesor3.addEventListener("click", () => cargarProfesoresConTresCursos())
-btnCupo.addEventListener("click", () => cargarCursosConCupo())
-btnPromedio.addEventListener("click", () => cargarPromedioNotas())
-btnPromedioSuperior.addEventListener("click", () => cargarPromedioSuperior())
-
-// Buscar por ID
-btnBuscar.addEventListener("click", () => buscarPorId())
-buscarId.addEventListener("keypress", (e) => {
-  if (e.key === "Enter") buscarPorId()
-})
-
-// Submit formulario
-formulario.addEventListener("submit", (e) => {
-  e.preventDefault()
-  guardarRegistro()
-})
-
-// Función para mostrar mensajes
-function mostrarMensaje(texto, tipo = "success") {
-  mensaje.textContent = texto
-  mensaje.style.background = tipo === "success" ? "#198754" : "#dc3545"
-  mensaje.style.display = "block"
-  setTimeout(() => {
-    mensaje.style.display = "none"
-  }, 3000)
+const state = {
+  apiBaseUrl: localStorage.getItem("apiBaseUrl") || DEFAULT_API_URL,
+  currentSection: "dashboard",
+  estudiantes: [],
+  profesores: [],
+  cursos: [],
+  inscripciones: []
 }
 
-// ==================== ESTUDIANTES ====================
+const $ = (selector) => document.querySelector(selector)
+const $$ = (selector) => Array.from(document.querySelectorAll(selector))
 
-async function cargarEstudiantes() {
-  estadoActual = "estudiantes"
-  titulo.textContent = "👨‍🎓 Estudiantes"
-  buscarId.placeholder = "Buscar por ID de estudiante"
-
-  try {
-    const response = await fetch(`${API_URL}/api/estudiantes`)
-    const datos = await response.json()
-
-    mostrarTabla(datos, [
-      "id",
-      "nombre",
-      "correo",
-      "carrera",
-      "semestre_actual",
-      "fecha_ingreso",
-      "estado"
-    ])
-    generarFormularioEstudiante()
-  } catch (error) {
-    mostrarMensaje("Error al cargar estudiantes", "error")
-    console.error(error)
+const elements = {
+  alert: $("#alert"),
+  apiBaseUrl: $("#apiBaseUrl"),
+  saveApiUrl: $("#saveApiUrl"),
+  refreshCurrent: $("#refreshCurrent"),
+  checkApi: $("#checkApi"),
+  sectionTitle: $("#sectionTitle"),
+  counts: {
+    estudiantes: $("#countEstudiantes"),
+    profesores: $("#countProfesores"),
+    cursos: $("#countCursos"),
+    inscripciones: $("#countInscripciones")
+  },
+  tables: {
+    estudiantes: $("#tablaEstudiantes"),
+    profesores: $("#tablaProfesores"),
+    cursos: $("#tablaCursos"),
+    inscripciones: $("#tablaInscripciones")
   }
 }
 
-function generarFormularioEstudiante() {
-  campos.innerHTML = `
-    <input type="text" id="nombre" placeholder="Nombre" required>
-    <input type="email" id="correo" placeholder="Correo" required>
-    <input type="text" id="carrera" placeholder="Carrera" required>
-    <input type="number" id="semestre_actual" placeholder="Semestre (1-10)" min="1" max="10" required>
-  `
+elements.apiBaseUrl.value = state.apiBaseUrl
+
+function showAlert(message, type = "success") {
+  elements.alert.textContent = message
+  elements.alert.className = `alert ${type}`
+  elements.alert.hidden = false
+
+  window.clearTimeout(showAlert.timeout)
+  showAlert.timeout = window.setTimeout(() => {
+    elements.alert.hidden = true
+  }, 5200)
 }
 
-// ==================== PROFESORES ====================
-
-async function cargarProfesores() {
-  estadoActual = "profesores"
-  titulo.textContent = "👨‍🏫 Profesores"
-  buscarId.placeholder = "Buscar por ID de profesor"
-
-  try {
-    const response = await fetch(`${API_URL}/api/profesores`)
-    const datos = await response.json()
-
-    mostrarTabla(datos, [
-      "id",
-      "nombre",
-      "correo",
-      "departamento",
-      "fecha_contratacion"
-    ])
-    generarFormularioProfesor()
-  } catch (error) {
-    mostrarMensaje("Error al cargar profesores", "error")
-    console.error(error)
-  }
+function normalizeApiUrl(url) {
+  return url.trim().replace(/\/$/, "")
 }
 
-function generarFormularioProfesor() {
-  campos.innerHTML = `
-    <input type="text" id="nombre" placeholder="Nombre" required>
-    <input type="email" id="correo" placeholder="Correo" required>
-    <input type="text" id="departamento" placeholder="Departamento" required>
-  `
-}
-
-// ==================== CURSOS ====================
-
-async function cargarCursos() {
-  estadoActual = "cursos"
-  titulo.textContent = "📚 Cursos"
-  buscarId.placeholder = "Buscar por ID de curso"
-
-  try {
-    const response = await fetch(`${API_URL}/api/cursos`)
-    const datos = await response.json()
-
-    mostrarTabla(datos, [
-      "id",
-      "nombre",
-      "cant_creditos",
-      "cupo_max",
-      "profesor_id",
-      "fecha_inicio",
-      "fecha_fin"
-    ])
-    generarFormularioCurso()
-  } catch (error) {
-    mostrarMensaje("Error al cargar cursos", "error")
-    console.error(error)
-  }
-}
-
-function generarFormularioCurso() {
-  campos.innerHTML = `
-    <input type="text" id="nombre" placeholder="Nombre del curso" required>
-    <input type="number" id="cant_creditos" placeholder="Créditos" required>
-    <input type="number" id="cupo_max" placeholder="Cupo máximo" required>
-    <input type="number" id="profesor_id" placeholder="ID del profesor" required>
-    <input type="date" id="fecha_inicio" required>
-    <input type="date" id="fecha_fin" required>
-  `
-}
-
-// ==================== INSCRIPCIONES ====================
-
-async function cargarInscripciones() {
-  estadoActual = "inscripciones"
-  titulo.textContent = "📝 Inscripciones"
-  buscarId.placeholder = "Buscar por ID de inscripción"
-
-  try {
-    const response = await fetch(`${API_URL}/api/inscripciones`)
-    const datos = await response.json()
-
-    mostrarTabla(datos, ["id", "estado", "estudiante_id", "curso_id"])
-    generarFormularioInscripcion()
-  } catch (error) {
-    mostrarMensaje("Error al cargar inscripciones", "error")
-    console.error(error)
-  }
-}
-
-function generarFormularioInscripcion() {
-  campos.innerHTML = `
-    <select id="estado" required>
-      <option value="">Seleccionar estado</option>
-      <option value="activa">Activa</option>
-      <option value="inactiva">Inactiva</option>
-      <option value="reprobada">Reprobada</option>
-    </select>
-    <input type="number" id="estudiante_id" placeholder="ID del estudiante" required>
-    <input type="number" id="curso_id" placeholder="ID del curso" required>
-  `
-}
-
-// ==================== MOSTRAR TABLA ====================
-
-function mostrarTabla(datos, columnas) {
-  // Limpiar tabla
-  tabla.innerHTML = ""
-  encabezadoTabla.innerHTML = ""
-
-  if (datos.length === 0) {
-    tabla.innerHTML =
-      '<tr><td colspan="10">No hay datos disponibles</td></tr>'
-    return
+function getErrorMessage(error) {
+  if (error instanceof TypeError) {
+    return "No se pudo conectar con el backend. Verifica que npm run dev esté activo. Si usas Live Server, puede ser bloqueo CORS porque el backend no fue modificado."
   }
 
-  // Crear encabezados
-  const headerRow = document.createElement("tr")
-  columnas.forEach((col) => {
-    const th = document.createElement("th")
-    th.textContent = col.charAt(0).toUpperCase() + col.slice(1)
-    headerRow.appendChild(th)
+  return error.message || "Ocurrió un error inesperado"
+}
+
+async function apiFetch(path, options = {}) {
+  const response = await fetch(`${state.apiBaseUrl}${path}`, {
+    headers: {
+      "Content-Type": "application/json",
+      ...(options.headers || {})
+    },
+    ...options
   })
-  // Agregar columna de acciones
-  const thAcciones = document.createElement("th")
-  thAcciones.textContent = "Acciones"
-  headerRow.appendChild(thAcciones)
-  encabezadoTabla.appendChild(headerRow)
 
-  // Crear filas
-  datos.forEach((fila) => {
-    const tr = document.createElement("tr")
-    columnas.forEach((col) => {
-      const td = document.createElement("td")
-      const valor = fila[col]
-      td.textContent = valor || "N/A"
-      tr.appendChild(td)
-    })
+  const text = await response.text()
+  let data = null
 
-    // Botones de acciones
-    const tdAcciones = document.createElement("td")
-    tdAcciones.innerHTML = `
-      <button class="btnEditar" onclick="editarRegistro(${fila.id})">✏️ Editar</button>
-      <button class="btnEliminar" onclick="eliminarRegistro(${fila.id})">🗑️ Eliminar</button>
-    `
-    tr.appendChild(tdAcciones)
-    tabla.appendChild(tr)
+  if (text) {
+    try {
+      data = JSON.parse(text)
+    } catch {
+      data = text
+    }
+  }
+
+  if (!response.ok) {
+    const message = data?.error || data?.mensaje || `Error HTTP ${response.status}`
+    throw new Error(message)
+  }
+
+  return data
+}
+
+function formatDate(value) {
+  if (!value) return "—"
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  return date.toLocaleDateString("es-CO", {
+    year: "numeric",
+    month: "short",
+    day: "2-digit"
   })
 }
 
-// ==================== BÚSQUEDA ====================
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;")
+}
 
-async function buscarPorId() {
-  const id = buscarId.value.trim()
+function renderEmpty(tbody, colspan) {
+  tbody.innerHTML = `<tr><td colspan="${colspan}" class="empty-state">No hay registros para mostrar.</td></tr>`
+}
 
-  if (!id) {
-    mostrarMensaje("Ingresa un ID para buscar", "error")
+function statusBadge(value) {
+  const estado = String(value || "—").toLowerCase()
+  let type = ""
+
+  if (estado === "activo" || estado === "activa" || estado === "aprobada") type = "success"
+  if (estado === "inactivo" || estado === "reprobada") type = "danger"
+  if (estado === "pendiente") type = "warning"
+
+  return `<span class="badge ${type}">${escapeHtml(value || "—")}</span>`
+}
+
+function getEstudianteNombre(id) {
+  const item = state.estudiantes.find((estudiante) => Number(estudiante.id) === Number(id))
+  return item ? `${item.nombre} (#${item.id})` : `ID ${id}`
+}
+
+function getCursoNombre(id) {
+  const item = state.cursos.find((curso) => Number(curso.id) === Number(id))
+  return item ? `${item.nombre} (#${item.id})` : `ID ${id}`
+}
+
+function getProfesorIdByName(nombre) {
+  const profesor = state.profesores.find((item) => item.nombre === nombre)
+  return profesor?.id || ""
+}
+
+function setButtonLoading(button, isLoading, text = "Guardando...") {
+  if (!button) return
+  if (isLoading) {
+    button.dataset.originalText = button.textContent
+    button.textContent = text
+    button.disabled = true
+  } else {
+    button.textContent = button.dataset.originalText || button.textContent
+    button.disabled = false
+  }
+}
+
+async function loadDashboard() {
+  await Promise.allSettled([
+    loadEstudiantes(false),
+    loadProfesores(false),
+    loadCursos(false),
+    loadInscripciones(false)
+  ])
+
+  updateCounts()
+}
+
+function updateCounts() {
+  elements.counts.estudiantes.textContent = state.estudiantes.length
+  elements.counts.profesores.textContent = state.profesores.length
+  elements.counts.cursos.textContent = state.cursos.length
+  elements.counts.inscripciones.textContent = state.inscripciones.length
+}
+
+async function loadEstudiantes(showMessage = true) {
+  try {
+    state.estudiantes = await apiFetch("/api/estudiantes")
+    renderEstudiantes()
+    fillEstudiantesSelect()
+    updateCounts()
+    if (showMessage) showAlert("Estudiantes actualizados")
+  } catch (error) {
+    showAlert(getErrorMessage(error), "error")
+  }
+}
+
+async function loadProfesores(showMessage = true) {
+  try {
+    state.profesores = await apiFetch("/api/profesores")
+    renderProfesores()
+    fillProfesoresSelect()
+    updateCounts()
+    if (showMessage) showAlert("Profesores actualizados")
+  } catch (error) {
+    showAlert(getErrorMessage(error), "error")
+  }
+}
+
+async function loadCursos(showMessage = true) {
+  try {
+    state.cursos = await apiFetch("/api/cursos")
+    renderCursos()
+    fillCursosSelect()
+    updateCounts()
+    if (showMessage) showAlert("Cursos actualizados")
+  } catch (error) {
+    showAlert(getErrorMessage(error), "error")
+  }
+}
+
+async function loadInscripciones(showMessage = true) {
+  try {
+    state.inscripciones = await apiFetch("/api/inscripciones")
+    renderInscripciones()
+    updateCounts()
+    if (showMessage) showAlert("Inscripciones actualizadas")
+  } catch (error) {
+    showAlert(getErrorMessage(error), "error")
+  }
+}
+
+function renderEstudiantes() {
+  const tbody = elements.tables.estudiantes
+
+  if (!state.estudiantes.length) {
+    renderEmpty(tbody, 7)
     return
   }
 
-  try {
-    const response = await fetch(`${API_URL}/api/${estadoActual}/${id}`)
-
-    if (!response.ok) {
-      mostrarMensaje("Registro no encontrado", "error")
-      return
-    }
-
-    const dato = await response.json()
-
-    // Determinar columnas según el estado
-    let columnas = []
-    if (estadoActual === "estudiantes") {
-      columnas = [
-        "id",
-        "nombre",
-        "correo",
-        "carrera",
-        "semestre_actual",
-        "fecha_ingreso",
-        "estado"
-      ]
-    } else if (estadoActual === "profesores") {
-      columnas = ["id", "nombre", "correo", "departamento", "fecha_contratacion"]
-    } else if (estadoActual === "cursos") {
-      columnas = [
-        "id",
-        "nombre",
-        "cant_creditos",
-        "cupo_max",
-        "profesor_id",
-        "fecha_inicio",
-        "fecha_fin"
-      ]
-    } else if (estadoActual === "inscripciones") {
-      columnas = ["id", "estado", "estudiante_id", "curso_id"]
-    }
-
-    mostrarTabla([dato], columnas)
-    buscarId.value = ""
-  } catch (error) {
-    mostrarMensaje("Error en la búsqueda", "error")
-    console.error(error)
-  }
+  tbody.innerHTML = state.estudiantes.map((estudiante) => `
+    <tr>
+      <td>${estudiante.id}</td>
+      <td>${escapeHtml(estudiante.nombre)}</td>
+      <td>${escapeHtml(estudiante.correo)}</td>
+      <td>${escapeHtml(estudiante.carrera)}</td>
+      <td>${escapeHtml(estudiante.semestre_actual)}</td>
+      <td>${statusBadge(estudiante.estado)}</td>
+      <td>
+        <div class="actions">
+          <button class="btn btn-secondary btn-small" type="button" data-edit-estudiante="${estudiante.id}">Editar</button>
+          <button class="btn btn-danger btn-small" type="button" data-delete-estudiante="${estudiante.id}">Eliminar</button>
+        </div>
+      </td>
+    </tr>
+  `).join("")
 }
 
-// ==================== EDITAR ====================
+function renderProfesores() {
+  const tbody = elements.tables.profesores
 
-async function editarRegistro(id) {
-  try {
-    const response = await fetch(`${API_URL}/api/${estadoActual}/${id}`)
-    const dato = await response.json()
-
-    registroEnEdicion = id
-
-    if (estadoActual === "estudiantes") {
-      document.getElementById("nombre").value = dato.nombre
-      document.getElementById("correo").value = dato.correo
-      document.getElementById("carrera").value = dato.carrera
-      document.getElementById("semestre_actual").value = dato.semestre_actual
-    } else if (estadoActual === "profesores") {
-      document.getElementById("nombre").value = dato.nombre
-      document.getElementById("correo").value = dato.correo
-      document.getElementById("departamento").value = dato.departamento
-    } else if (estadoActual === "cursos") {
-      document.getElementById("nombre").value = dato.nombre
-      document.getElementById("cant_creditos").value = dato.cant_creditos
-      document.getElementById("cupo_max").value = dato.cupo_max
-      document.getElementById("profesor_id").value = dato.profesor_id
-      document.getElementById("fecha_inicio").value = dato.fecha_inicio
-        .split("T")[0]
-      document.getElementById("fecha_fin").value = dato.fecha_fin.split("T")[0]
-    } else if (estadoActual === "inscripciones") {
-      document.getElementById("estado").value = dato.estado
-      document.getElementById("estudiante_id").value = dato.estudiante_id
-      document.getElementById("curso_id").value = dato.curso_id
-    }
-
-    window.scrollTo(0, document.body.scrollHeight)
-  } catch (error) {
-    mostrarMensaje("Error al cargar el registro", "error")
-    console.error(error)
+  if (!state.profesores.length) {
+    renderEmpty(tbody, 6)
+    return
   }
+
+  tbody.innerHTML = state.profesores.map((profesor) => `
+    <tr>
+      <td>${profesor.id}</td>
+      <td>${escapeHtml(profesor.nombre)}</td>
+      <td>${escapeHtml(profesor.correo)}</td>
+      <td>${escapeHtml(profesor.departamento)}</td>
+      <td>${formatDate(profesor.fecha_contratacion)}</td>
+      <td>
+        <div class="actions">
+          <button class="btn btn-secondary btn-small" type="button" data-edit-profesor="${profesor.id}">Editar</button>
+          <button class="btn btn-danger btn-small" type="button" data-delete-profesor="${profesor.id}">Eliminar</button>
+        </div>
+      </td>
+    </tr>
+  `).join("")
 }
 
-// ==================== GUARDAR ====================
+function renderCursos() {
+  const tbody = elements.tables.cursos
 
-async function guardarRegistro() {
-  const datos = new FormData(formulario)
-  const objeto = Object.fromEntries(datos)
-
-  // Validaciones según el tipo
-  if (estadoActual === "estudiantes") {
-    if (!objeto.nombre || !objeto.correo || !objeto.carrera) {
-      mostrarMensaje("Completa todos los campos obligatorios", "error")
-      return
-    }
-    objeto.semestre_actual = Number(objeto.semestre_actual)
+  if (!state.cursos.length) {
+    renderEmpty(tbody, 6)
+    return
   }
 
-  if (estadoActual === "profesores") {
-    if (!objeto.nombre || !objeto.correo || !objeto.departamento) {
-      mostrarMensaje("Completa todos los campos obligatorios", "error")
-      return
-    }
+  tbody.innerHTML = state.cursos.map((curso) => `
+    <tr>
+      <td>${curso.id}</td>
+      <td>${escapeHtml(curso.nombre)}</td>
+      <td>${escapeHtml(curso.cant_creditos)}</td>
+      <td>${escapeHtml(curso.profesor || "Sin profesor")}</td>
+      <td>${escapeHtml(curso.cupo_max)}</td>
+      <td>
+        <div class="actions">
+          <button class="btn btn-secondary btn-small" type="button" data-edit-curso="${curso.id}">Editar</button>
+          <button class="btn btn-danger btn-small" type="button" data-delete-curso="${curso.id}">Eliminar</button>
+        </div>
+      </td>
+    </tr>
+  `).join("")
+}
+
+function renderInscripciones() {
+  const tbody = elements.tables.inscripciones
+
+  if (!state.inscripciones.length) {
+    renderEmpty(tbody, 6)
+    return
   }
 
-  if (estadoActual === "cursos") {
-    if (
-      !objeto.nombre ||
-      !objeto.cant_creditos ||
-      !objeto.cupo_max ||
-      !objeto.profesor_id
-    ) {
-      mostrarMensaje("Completa todos los campos obligatorios", "error")
-      return
-    }
-    objeto.cant_creditos = Number(objeto.cant_creditos)
-    objeto.cupo_max = Number(objeto.cupo_max)
-    objeto.profesor_id = Number(objeto.profesor_id)
-  }
+  tbody.innerHTML = state.inscripciones.map((inscripcion) => `
+    <tr>
+      <td>${inscripcion.id}</td>
+      <td>${formatDate(inscripcion.fecha_ins)}</td>
+      <td>${statusBadge(inscripcion.estado)}</td>
+      <td>${escapeHtml(getEstudianteNombre(inscripcion.estudiante_id))}</td>
+      <td>${escapeHtml(getCursoNombre(inscripcion.curso_id))}</td>
+      <td>
+        <div class="actions">
+          <button class="btn btn-secondary btn-small" type="button" data-edit-inscripcion="${inscripcion.id}">Editar</button>
+          <button class="btn btn-danger btn-small" type="button" data-delete-inscripcion="${inscripcion.id}">Eliminar</button>
+        </div>
+      </td>
+    </tr>
+  `).join("")
+}
 
-  if (estadoActual === "inscripciones") {
-    if (!objeto.estado || !objeto.estudiante_id || !objeto.curso_id) {
-      mostrarMensaje("Completa todos los campos obligatorios", "error")
-      return
-    }
-    objeto.estudiante_id = Number(objeto.estudiante_id)
-    objeto.curso_id = Number(objeto.curso_id)
+function fillProfesoresSelect() {
+  const select = $("#cursoProfesor")
+  const currentValue = select.value
+
+  select.innerHTML = `<option value="">Selecciona un profesor</option>` +
+    state.profesores.map((profesor) => `
+      <option value="${profesor.id}">${escapeHtml(profesor.nombre)} — ${escapeHtml(profesor.departamento)}</option>
+    `).join("")
+
+  select.value = currentValue
+}
+
+function fillEstudiantesSelect() {
+  const select = $("#inscripcionEstudiante")
+  const currentValue = select.value
+
+  select.innerHTML = `<option value="">Selecciona un estudiante</option>` +
+    state.estudiantes.map((estudiante) => `
+      <option value="${estudiante.id}">${escapeHtml(estudiante.nombre)} — ${escapeHtml(estudiante.carrera)}</option>
+    `).join("")
+
+  select.value = currentValue
+}
+
+function fillCursosSelect() {
+  const select = $("#inscripcionCurso")
+  const currentValue = select.value
+
+  select.innerHTML = `<option value="">Selecciona un curso</option>` +
+    state.cursos.map((curso) => `
+      <option value="${curso.id}">${escapeHtml(curso.nombre)}</option>
+    `).join("")
+
+  select.value = currentValue
+}
+
+function resetEstudianteForm() {
+  $("#estudianteId").value = ""
+  $("#formEstudiante").reset()
+  $("#estudianteFormTitle").textContent = "Crear estudiante"
+}
+
+function resetProfesorForm() {
+  $("#profesorId").value = ""
+  $("#formProfesor").reset()
+  $("#profesorFormTitle").textContent = "Crear profesor"
+}
+
+function resetCursoForm() {
+  $("#cursoId").value = ""
+  $("#formCurso").reset()
+  $("#cursoFormTitle").textContent = "Crear curso"
+}
+
+function resetInscripcionForm() {
+  $("#inscripcionId").value = ""
+  $("#formInscripcion").reset()
+  $("#inscripcionEstado").value = "activa"
+  $("#inscripcionFormTitle").textContent = "Crear inscripción"
+}
+
+function editEstudiante(id) {
+  const estudiante = state.estudiantes.find((item) => Number(item.id) === Number(id))
+  if (!estudiante) return
+
+  $("#estudianteId").value = estudiante.id
+  $("#estudianteNombre").value = estudiante.nombre || ""
+  $("#estudianteCorreo").value = estudiante.correo || ""
+  $("#estudianteCarrera").value = estudiante.carrera || ""
+  $("#estudianteSemestre").value = estudiante.semestre_actual || ""
+  $("#estudianteFormTitle").textContent = `Editar estudiante #${estudiante.id}`
+  switchSection("estudiantes")
+}
+
+function editProfesor(id) {
+  const profesor = state.profesores.find((item) => Number(item.id) === Number(id))
+  if (!profesor) return
+
+  $("#profesorId").value = profesor.id
+  $("#profesorNombre").value = profesor.nombre || ""
+  $("#profesorCorreo").value = profesor.correo || ""
+  $("#profesorDepartamento").value = profesor.departamento || ""
+  $("#profesorFormTitle").textContent = `Editar profesor #${profesor.id}`
+  switchSection("profesores")
+}
+
+function editCurso(id) {
+  const curso = state.cursos.find((item) => Number(item.id) === Number(id))
+  if (!curso) return
+
+  $("#cursoId").value = curso.id
+  $("#cursoNombre").value = curso.nombre || ""
+  $("#cursoCreditos").value = curso.cant_creditos || ""
+  $("#cursoProfesor").value = getProfesorIdByName(curso.profesor)
+  $("#cursoCupo").value = curso.cupo_max || ""
+  $("#cursoFormTitle").textContent = `Editar curso #${curso.id}`
+  switchSection("cursos")
+}
+
+function editInscripcion(id) {
+  const inscripcion = state.inscripciones.find((item) => Number(item.id) === Number(id))
+  if (!inscripcion) return
+
+  $("#inscripcionId").value = inscripcion.id
+  $("#inscripcionEstudiante").value = inscripcion.estudiante_id || ""
+  $("#inscripcionCurso").value = inscripcion.curso_id || ""
+  $("#inscripcionEstado").value = inscripcion.estado || "activa"
+  $("#inscripcionFormTitle").textContent = `Editar inscripción #${inscripcion.id}`
+  switchSection("inscripciones")
+}
+
+async function handleEstudianteSubmit(event) {
+  event.preventDefault()
+  const button = event.submitter
+  setButtonLoading(button, true)
+
+  const id = $("#estudianteId").value
+  const payload = {
+    nombre: $("#estudianteNombre").value.trim(),
+    correo: $("#estudianteCorreo").value.trim(),
+    carrera: $("#estudianteCarrera").value.trim(),
+    semestre_actual: Number($("#estudianteSemestre").value)
   }
 
   try {
-    let response
-
-    if (registroEnEdicion) {
-      // Actualizar
-      response = await fetch(
-        `${API_URL}/api/${estadoActual}/${registroEnEdicion}`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(objeto)
-        }
-      )
-    } else {
-      // Crear
-      response = await fetch(`${API_URL}/api/${estadoActual}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(objeto)
+    if (id) {
+      await apiFetch(`/api/estudiantes/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(payload)
       })
+      showAlert("Estudiante actualizado correctamente")
+    } else {
+      await apiFetch("/api/estudiantes", {
+        method: "POST",
+        body: JSON.stringify(payload)
+      })
+      showAlert("Estudiante creado correctamente")
     }
 
-    if (!response.ok) {
-      const error = await response.json()
-      mostrarMensaje(error.error || error.mensaje || "Error al guardar", "error")
-      return
-    }
-
-    mostrarMensaje(
-      registroEnEdicion ? "Registro actualizado" : "Registro creado",
-      "success"
-    )
-    registroEnEdicion = null
-    formulario.reset()
-
-    // Recargar lista
-    if (estadoActual === "estudiantes") cargarEstudiantes()
-    else if (estadoActual === "profesores") cargarProfesores()
-    else if (estadoActual === "cursos") cargarCursos()
-    else if (estadoActual === "inscripciones") cargarInscripciones()
+    resetEstudianteForm()
+    await loadEstudiantes(false)
   } catch (error) {
-    mostrarMensaje("Error al guardar el registro", "error")
-    console.error(error)
+    showAlert(getErrorMessage(error), "error")
+  } finally {
+    setButtonLoading(button, false)
   }
 }
 
-// ==================== ELIMINAR ====================
+async function handleProfesorSubmit(event) {
+  event.preventDefault()
+  const button = event.submitter
+  setButtonLoading(button, true)
 
-async function eliminarRegistro(id) {
-  if (!confirm("¿Estás seguro de que deseas eliminar este registro?")) {
-    return
+  const id = $("#profesorId").value
+  const payload = {
+    nombre: $("#profesorNombre").value.trim(),
+    correo: $("#profesorCorreo").value.trim(),
+    departamento: $("#profesorDepartamento").value.trim()
   }
 
   try {
-    const response = await fetch(`${API_URL}/api/${estadoActual}/${id}`, {
-      method: "DELETE"
+    if (id) {
+      await apiFetch(`/api/profesores/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(payload)
+      })
+      showAlert("Profesor actualizado correctamente")
+    } else {
+      await apiFetch("/api/profesores", {
+        method: "POST",
+        body: JSON.stringify(payload)
+      })
+      showAlert("Profesor creado correctamente")
+    }
+
+    resetProfesorForm()
+    await loadProfesores(false)
+  } catch (error) {
+    showAlert(getErrorMessage(error), "error")
+  } finally {
+    setButtonLoading(button, false)
+  }
+}
+
+async function handleCursoSubmit(event) {
+  event.preventDefault()
+  const button = event.submitter
+  setButtonLoading(button, true)
+
+  const id = $("#cursoId").value
+  const payload = {
+    nombre: $("#cursoNombre").value.trim(),
+    cant_creditos: Number($("#cursoCreditos").value),
+    profesor_id: Number($("#cursoProfesor").value),
+    cupo_max: Number($("#cursoCupo").value)
+  }
+
+  try {
+    if (id) {
+      await apiFetch(`/api/cursos/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(payload)
+      })
+      showAlert("Curso actualizado correctamente")
+    } else {
+      await apiFetch("/api/cursos", {
+        method: "POST",
+        body: JSON.stringify(payload)
+      })
+      showAlert("Curso creado correctamente")
+    }
+
+    resetCursoForm()
+    await loadCursos(false)
+  } catch (error) {
+    showAlert(getErrorMessage(error), "error")
+  } finally {
+    setButtonLoading(button, false)
+  }
+}
+
+async function handleInscripcionSubmit(event) {
+  event.preventDefault()
+  const button = event.submitter
+  setButtonLoading(button, true)
+
+  const id = $("#inscripcionId").value
+  const payload = {
+    estado: $("#inscripcionEstado").value,
+    estudiante_id: Number($("#inscripcionEstudiante").value),
+    curso_id: Number($("#inscripcionCurso").value)
+  }
+
+  try {
+    if (id) {
+      await apiFetch(`/api/inscripciones/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(payload)
+      })
+      showAlert("Inscripción actualizada correctamente")
+    } else {
+      await apiFetch("/api/inscripciones", {
+        method: "POST",
+        body: JSON.stringify(payload)
+      })
+      showAlert("Inscripción creada correctamente")
+    }
+
+    resetInscripcionForm()
+    await loadInscripciones(false)
+  } catch (error) {
+    showAlert(getErrorMessage(error), "error")
+  } finally {
+    setButtonLoading(button, false)
+  }
+}
+
+async function deleteItem(entity, id) {
+  const labels = {
+    estudiante: "estudiante",
+    profesor: "profesor",
+    curso: "curso",
+    inscripcion: "inscripción"
+  }
+
+  const confirmed = window.confirm(`¿Seguro que deseas eliminar este ${labels[entity]}?`)
+  if (!confirmed) return
+
+  const paths = {
+    estudiante: `/api/estudiantes/${id}`,
+    profesor: `/api/profesores/${id}`,
+    curso: `/api/cursos/${id}`,
+    inscripcion: `/api/inscripciones/${id}`
+  }
+
+  try {
+    await apiFetch(paths[entity], { method: "DELETE" })
+    showAlert(`${labels[entity][0].toUpperCase()}${labels[entity].slice(1)} eliminado correctamente`)
+
+    if (entity === "estudiante") await loadEstudiantes(false)
+    if (entity === "profesor") await loadProfesores(false)
+    if (entity === "curso") await loadCursos(false)
+    if (entity === "inscripcion") await loadInscripciones(false)
+  } catch (error) {
+    showAlert(getErrorMessage(error), "error")
+  }
+}
+
+function switchSection(section) {
+  state.currentSection = section
+
+  $$(".nav-tab").forEach((tab) => {
+    tab.classList.toggle("is-active", tab.dataset.section === section)
+  })
+
+  $$(".view").forEach((view) => {
+    view.classList.toggle("is-active", view.id === section)
+  })
+
+  const titles = {
+    dashboard: "Dashboard",
+    estudiantes: "Estudiantes",
+    profesores: "Profesores",
+    cursos: "Cursos",
+    inscripciones: "Inscripciones"
+  }
+
+  elements.sectionTitle.textContent = titles[section] || "Dashboard"
+
+  if (section === "dashboard") loadDashboard()
+  if (section === "estudiantes") loadEstudiantes(false)
+  if (section === "profesores") loadProfesores(false)
+  if (section === "cursos") {
+    loadProfesores(false).finally(() => loadCursos(false))
+  }
+  if (section === "inscripciones") {
+    Promise.allSettled([loadEstudiantes(false), loadCursos(false)]).finally(() => loadInscripciones(false))
+  }
+}
+
+function refreshCurrentSection() {
+  switchSection(state.currentSection)
+  showAlert("Datos actualizados")
+}
+
+function bindEvents() {
+  $$(".nav-tab").forEach((tab) => {
+    tab.addEventListener("click", () => switchSection(tab.dataset.section))
+  })
+
+  elements.saveApiUrl.addEventListener("click", () => {
+    state.apiBaseUrl = normalizeApiUrl(elements.apiBaseUrl.value || DEFAULT_API_URL)
+    elements.apiBaseUrl.value = state.apiBaseUrl
+    localStorage.setItem("apiBaseUrl", state.apiBaseUrl)
+    showAlert("URL del backend guardada")
+    refreshCurrentSection()
+  })
+
+  elements.refreshCurrent.addEventListener("click", refreshCurrentSection)
+
+  elements.checkApi.addEventListener("click", async () => {
+    try {
+      const data = await apiFetch("/test-db")
+      showAlert(data?.mensaje || "Conexión exitosa")
+      await loadDashboard()
+    } catch (error) {
+      showAlert(getErrorMessage(error), "error")
+    }
+  })
+
+  $$("[data-reload]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const key = button.dataset.reload
+      if (key === "estudiantes") loadEstudiantes()
+      if (key === "profesores") loadProfesores()
+      if (key === "cursos") loadCursos()
+      if (key === "inscripciones") loadInscripciones()
     })
+  })
 
-    if (!response.ok) {
-      mostrarMensaje("Error al eliminar", "error")
-      return
-    }
+  $$("[data-reset-form]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const key = button.dataset.resetForm
+      if (key === "estudiante") resetEstudianteForm()
+      if (key === "profesor") resetProfesorForm()
+      if (key === "curso") resetCursoForm()
+      if (key === "inscripcion") resetInscripcionForm()
+    })
+  })
 
-    mostrarMensaje("Registro eliminado", "success")
+  $("#formEstudiante").addEventListener("submit", handleEstudianteSubmit)
+  $("#formProfesor").addEventListener("submit", handleProfesorSubmit)
+  $("#formCurso").addEventListener("submit", handleCursoSubmit)
+  $("#formInscripcion").addEventListener("submit", handleInscripcionSubmit)
 
-    // Recargar lista
-    if (estadoActual === "estudiantes") cargarEstudiantes()
-    else if (estadoActual === "profesores") cargarProfesores()
-    else if (estadoActual === "cursos") cargarCursos()
-    else if (estadoActual === "inscripciones") cargarInscripciones()
-  } catch (error) {
-    mostrarMensaje("Error al eliminar el registro", "error")
-    console.error(error)
-  }
+  document.addEventListener("click", (event) => {
+    const target = event.target
+
+    if (target.matches("[data-edit-estudiante]")) editEstudiante(target.dataset.editEstudiante)
+    if (target.matches("[data-edit-profesor]")) editProfesor(target.dataset.editProfesor)
+    if (target.matches("[data-edit-curso]")) editCurso(target.dataset.editCurso)
+    if (target.matches("[data-edit-inscripcion]")) editInscripcion(target.dataset.editInscripcion)
+
+    if (target.matches("[data-delete-estudiante]")) deleteItem("estudiante", target.dataset.deleteEstudiante)
+    if (target.matches("[data-delete-profesor]")) deleteItem("profesor", target.dataset.deleteProfesor)
+    if (target.matches("[data-delete-curso]")) deleteItem("curso", target.dataset.deleteCurso)
+    if (target.matches("[data-delete-inscripcion]")) deleteItem("inscripcion", target.dataset.deleteInscripcion)
+  })
 }
 
-// ==================== QUERIES ESPECIALES ====================
-
-async function cargarTop10() {
-  titulo.textContent = "Top 10 Estudiantes por Semestre"
-  campos.innerHTML = ""
-  buscarId.value = ""
-
-  try {
-    const response = await fetch(`${API_URL}/api/estudiantes/top-10`)
-    const datos = await response.json()
-
-    mostrarTabla(datos, ["nombre", "carrera", "semestre_actual"])
-  } catch (error) {
-    mostrarMensaje("Error al cargar los datos", "error")
-    console.error(error)
-  }
-}
-
-async function cargarCursosProgramacionMatematicas() {
-  titulo.textContent = "Cursos de Programación / Matemáticas"
-  campos.innerHTML = ""
-  buscarId.value = ""
-
-  try {
-    const response = await fetch(
-      `${API_URL}/api/cursos/programacion-matematicas`
-    )
-    const datos = await response.json()
-
-    mostrarTabla(datos, [
-      "id",
-      "nombre",
-      "cant_creditos",
-      "cupo_max",
-      "profesor_id"
-    ])
-  } catch (error) {
-    mostrarMensaje("Error al cargar los datos", "error")
-    console.error(error)
-  }
-}
-
-async function cargarCursosPorInscripciones() {
-  titulo.textContent = "Cursos por Inscripciones"
-  campos.innerHTML = ""
-  buscarId.value = ""
-
-  try {
-    const response = await fetch(`${API_URL}/api/cursos/inscripciones`)
-    const datos = await response.json()
-
-    mostrarTabla(datos, ["nombre", "total_inscripciones"])
-  } catch (error) {
-    mostrarMensaje("Error al cargar los datos", "error")
-    console.error(error)
-  }
-}
-
-async function cargarInscripcionesActivas() {
-  titulo.textContent = "Inscripciones Activas"
-  campos.innerHTML = ""
-  buscarId.value = ""
-
-  try {
-    const response = await fetch(`${API_URL}/api/inscripciones/activas`)
-    const datos = await response.json()
-
-    mostrarTabla(datos, ["estudiante", "curso"])
-  } catch (error) {
-    mostrarMensaje("Error al cargar los datos", "error")
-    console.error(error)
-  }
-}
-
-async function cargarProfesoresConTresCursos() {
-  titulo.textContent = "Profesores con 3 o más Cursos"
-  campos.innerHTML = ""
-  buscarId.value = ""
-
-  try {
-    const response = await fetch(`${API_URL}/api/profesores/tres-o-mas-cursos`)
-    const datos = await response.json()
-
-    mostrarTabla(datos, ["id", "nombre", "cantidad_cursos"])
-  } catch (error) {
-    mostrarMensaje("Error al cargar los datos", "error")
-    console.error(error)
-  }
-}
-
-async function cargarCursosConCupo() {
-  titulo.textContent = "Cursos con Cupo Disponible"
-  campos.innerHTML = ""
-  buscarId.value = ""
-
-  try {
-    const response = await fetch(`${API_URL}/api/cursos/cupo-disponible`)
-    const datos = await response.json()
-
-    mostrarTabla(datos, ["nombre", "inscritos", "cupo_max"])
-  } catch (error) {
-    mostrarMensaje("Error al cargar los datos", "error")
-    console.error(error)
-  }
-}
-
-async function cargarPromedioNotas() {
-  titulo.textContent = "Promedio de Notas por Estudiante"
-  campos.innerHTML = ""
-  buscarId.value = ""
-
-  try {
-    const response = await fetch(`${API_URL}/api/estudiantes/promedio-notas`)
-    const datos = await response.json()
-
-    mostrarTabla(datos, ["id", "nombre", "promedio", "nota_mas_alta", "nota_mas_baja"])
-  } catch (error) {
-    mostrarMensaje("Error al cargar los datos", "error")
-    console.error(error)
-  }
-}
-
-async function cargarPromedioSuperior() {
-  titulo.textContent = "Estudiantes con Promedio Superior"
-  campos.innerHTML = ""
-  buscarId.value = ""
-
-  try {
-    const response = await fetch(
-      `${API_URL}/api/estudiantes/promedio-superior`
-    )
-    const datos = await response.json()
-
-    mostrarTabla(datos, ["id", "nombre", "promedio", "nota_mas_alta", "nota_mas_baja"])
-  } catch (error) {
-    mostrarMensaje("Error al cargar los datos", "error")
-    console.error(error)
-  }
-}
-
-// ==================== INICIALIZACIÓN ====================
-
-cargarEstudiantes()
+bindEvents()
+loadDashboard()
