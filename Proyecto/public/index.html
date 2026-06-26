@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema Universitario</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <header>
+        <h1>🎓 Sistema de Gestión Universitaria</h1>
+    </header>
+
+    <div class="container">
+
+        <aside>
+
+            <button id="btnEstudiantes">👨‍🎓 Estudiantes</button>
+
+            <button id="btnProfesores">👨‍🏫 Profesores</button>
+
+            <button id="btnCursos">📚 Cursos</button>
+
+            <button id="btnInscripciones">📝 Inscripciones</button>
+
+            <hr>
+
+            <button id="btnTop10">
+                Top 10 Estudiantes
+            </button>
+
+            <button id="btnCursosPM">
+                Cursos Programación / Matemáticas
+            </button>
+
+            <button id="btnCursosInscripciones">
+                Cursos por Inscripciones
+            </button>
+
+            <button id="btnActivas">
+                Inscripciones Activas
+            </button>
+
+            <button id="btnProfesor3">
+                Profesores con 3 cursos
+            </button>
+
+            <button id="btnCupo">
+                Cursos con Cupo
+            </button>
+
+            <button id="btnPromedio">
+                Promedio de Notas
+            </button>
+
+            <button id="btnPromedioSuperior">
+                Promedio Superior
+            </button>
+
+        </aside>
+
+        <main>
+
+            <section class="panel">
+
+                <h2 id="titulo">
+                    Bienvenido
+                </h2>
+
+                <div class="busqueda">
+
+                    <input
+                        type="number"
+                        id="buscarId"
+                        placeholder="Buscar por ID">
+
+                    <button id="btnBuscar">
+                        Buscar
+                    </button>
+
+                </div>
+
+                <table>
+
+                    <thead id="encabezadoTabla">
+
+                    </thead>
+
+                    <tbody id="tabla">
+
+                    </tbody>
+
+                </table>
+
+            </section>
+
+
+            <section class="panel">
+
+                <h2>
+                    Formulario
+                </h2>
+
+                <form id="formulario">
+
+                    <div id="campos">
+
+                    </div>
+
+                    <button type="submit">
+                        Guardar
+                    </button>
+
+                </form>
+
+            </section>
+
+        </main>
+
+    </div>
+
+    <div id="mensaje">
+
+    </div>
+
+    <script src="app.js"></script>
+
+</body>
+
+</html>
