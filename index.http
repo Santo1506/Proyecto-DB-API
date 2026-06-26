@@ -99,3 +99,35 @@ Content-Type: application/json
   "estudiante_id": 1,
   "curso_id": 2
 }
+
+### QUERIES
+
+### Top 10 estudiantes por semestre
+GET http://localhost:3000/api/estudiantes/top-10
+
+### Cursos de Programación o Matemáticas
+GET http://localhost:3000/api/cursos/programacion-matematicas
+
+### Cantidad de inscripciones por curso
+GET http://localhost:3000/api/cursos/inscripciones
+
+### Inscripciones activas
+GET http://localhost:3000/api/inscripciones/activas
+
+### Estudiantes con sus inscripciones
+GET http://localhost:3000/api/estudiantes/inscripciones
+
+### Profesores con 3 o más cursos
+GET http://localhost:3000/api/profesores/tres-o-mas-cursos
+
+### Cursos con cupo disponible
+GET http://localhost:3000/api/cursos/cupo-disponible
+
+### Promedio, nota máxima y mínima por estudiante
+GET http://localhost:3000/api/estudiantes/promedio-notas
+
+### Estudiantes con promedio superior al promedio general
+GET http://localhost:3000/api/estudiantes/promedio-superior
+
+### Marcar como reprobadas las inscripciones con promedio menor a 60
+PUT http://localhost:3000/api/inscripciones/reprobar

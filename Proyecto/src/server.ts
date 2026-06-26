@@ -899,6 +899,274 @@ app.delete("/api/inscripciones/:id", async (req:any, res:any) => {
   }
 })
 
+// QUERIES
+
+app.get("/api/estudiantes/top-10", async (_req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT nombre, carrera, semestre_actual
+      FROM estudiante
+      ORDER BY semestre_actual DESC
+      LIMIT 10`
+    )
+
+    res.json(rows)
+
+  } catch (error) {
+    console.error("Error al listar los estudiantes:", error)
+
+    res.status(500).json({
+      error: "Error al obtener los estudiantes"
+    })
+  }
+})
+
+app.get("/api/cursos/programacion-matematicas", async (_req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT *
+       FROM curso
+       WHERE
+         (nombre LIKE '%rogramacion%'
+         OR nombre LIKE '%atematicas%')
+       AND cant_creditos BETWEEN 3 AND 5`
+    )
+
+    res.json(rows)
+
+  } catch (error) {
+    console.error("Error al consultar los cursos:", error)
+
+    res.status(500).json({
+      error: "Error al obtener los cursos"
+    })
+  }
+})
+
+
+app.get("/api/cursos/inscripciones", async (_req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT
+        b.nombre,
+        COUNT(*) AS total_inscripciones
+      FROM inscripcion a
+      INNER JOIN curso b
+        ON a.curso_id = b.id
+      GROUP BY b.nombre
+      ORDER BY COUNT(*) DESC`
+    )
+
+    res.json(rows)
+
+  } catch (error) {
+    console.error("Error al obtener las inscripciones por curso:", error)
+
+    res.status(500).json({
+      error: "Error al obtener las inscripciones por curso"
+    })
+  }
+})
+
+app.get("/api/inscripciones/activas", async (_req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT
+        b.nombre AS estudiante,
+        c.nombre AS curso
+      FROM inscripcion a
+      INNER JOIN estudiante b
+        ON a.estudiante_id = b.id
+      INNER JOIN curso c
+        ON a.curso_id = c.id
+      WHERE a.estado = 'activa'`
+    )
+
+    res.json(rows)
+
+  } catch (error) {
+    console.error("Error al consultar las inscripciones activas:", error)
+
+    res.status(500).json({
+      error: "Error al obtener las inscripciones activas"
+    })
+  }
+})
+
+app.get("/api/estudiantes/inscripciones", async (_req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT
+        a.nombre AS estudiante,
+        c.nombre AS curso,
+        b.estado
+      FROM estudiante a
+      LEFT JOIN inscripcion b
+        ON a.id = b.estudiante_id
+      LEFT JOIN curso c
+        ON c.id = b.curso_id`
+    )
+
+    res.json(rows)
+
+  } catch (error) {
+    console.error("Error al consultar las inscripciones de los estudiantes:", error)
+
+    res.status(500).json({
+      error: "Error al obtener las inscripciones de los estudiantes"
+    })
+  }
+})
+
+app.get("/api/profesores/tres-o-mas-cursos", async (_req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT
+        a.id,
+        a.nombre,
+        COUNT(*) AS cantidad_cursos
+      FROM profesor a
+      INNER JOIN curso c
+        ON c.profesor_id = a.id
+      GROUP BY a.id, a.nombre
+      HAVING COUNT(*) >= 3`
+    )
+
+    res.json(rows)
+
+  } catch (error) {
+    console.error("Error al consultar profesores:", error)
+
+    res.status(500).json({
+      error: "Error al obtener los profesores"
+    })
+  }
+})
+
+app.get("/api/cursos/cupo-disponible", async (_req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT
+        curso.nombre,
+        COUNT(*) AS inscritos,
+        curso.cupo_max
+      FROM inscripcion
+      INNER JOIN curso
+        ON curso.id = inscripcion.curso_id
+      GROUP BY
+        curso.id,
+        curso.nombre,
+        curso.cupo_max
+      HAVING COUNT(*) < curso.cupo_max`
+    )
+
+    res.json(rows)
+
+  } catch (error) {
+    console.error("Error al consultar cursos con cupo disponible:", error)
+
+    res.status(500).json({
+      error: "Error al obtener los cursos"
+    })
+  }
+})
+
+app.get("/api/estudiantes/promedio-notas", async (_req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT
+        a.id,
+        a.nombre,
+        ROUND(AVG(c.valor_nota), 2) AS promedio,
+        MAX(c.valor_nota) AS nota_mas_alta,
+        MIN(c.valor_nota) AS nota_mas_baja
+      FROM estudiante a
+      INNER JOIN inscripcion b
+        ON a.id = b.estudiante_id
+      INNER JOIN nota c
+        ON c.inscripcion_id = b.id
+      GROUP BY
+        a.id,
+        a.nombre`
+    )
+
+    res.json(rows)
+
+  } catch (error) {
+    console.error("Error al consultar las notas de los estudiantes:", error)
+
+    res.status(500).json({
+      error: "Error al obtener las notas de los estudiantes"
+    })
+  }
+})
+
+app.get("/api/estudiantes/promedio-superior", async (_req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT
+        a.id,
+        a.nombre,
+        ROUND(AVG(c.valor_nota), 2) AS promedio,
+        MAX(c.valor_nota) AS nota_mas_alta,
+        MIN(c.valor_nota) AS nota_mas_baja
+      FROM estudiante a
+      INNER JOIN inscripcion b
+        ON a.id = b.estudiante_id
+      INNER JOIN nota c
+        ON c.inscripcion_id = b.id
+      GROUP BY
+        a.id,
+        a.nombre
+      HAVING AVG(c.valor_nota) >
+        (
+          SELECT AVG(valor_nota)
+          FROM nota
+        )`
+    )
+
+    res.json(rows)
+
+  } catch (error) {
+    console.error("Error al consultar los estudiantes:", error)
+
+    res.status(500).json({
+      error: "Error al obtener los estudiantes"
+    })
+  }
+})
+
+app.put("/api/inscripciones/reprobar", async (_req, res) => {
+  try {
+    const { rowCount } = await pool.query(
+      `UPDATE inscripcion_clonebk
+       SET estado = 'reprobada'
+       WHERE 60 > (
+         SELECT AVG(c.valor_nota)
+         FROM nota c
+         INNER JOIN inscripcion b
+           ON c.inscripcion_id = b.id
+         WHERE b.id = inscripcion_clonebk.id
+         GROUP BY b.id
+       )`
+    )
+
+    res.status(200).json({
+      mensaje: "Inscripciones actualizadas correctamente",
+      registros_actualizados: rowCount
+    })
+
+  } catch (error) {
+    console.error("Error al actualizar las inscripciones:", error)
+
+    res.status(500).json({
+      error: "Error al actualizar las inscripciones"
+    })
+  }
+})
+
+
+
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en http://localhost:${PORT}`)
 })
